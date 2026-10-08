@@ -1,0 +1,22 @@
+version: 1
+
+models:
+  - name: ods_cartes_pokemon
+    description: "Table ODS des cartes Pokémon. Une ligne par carte."
+    columns:
+      - name: id_card
+        description: "Identifiant unique de la carte."
+        tests:
+          - unique
+          - not_null
+
+      - name: name_card
+        description: "Nom de la carte."
+        tests:
+          - not_null
+
+      - name: image_url_card
+        description: "URL de l'image de la carte."
+
+      - name: updated_at
+        description: "Timestamp de mise à jour."

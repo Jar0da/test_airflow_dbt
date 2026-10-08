@@ -1,0 +1,7 @@
+version: 1
+
+sources:
+  - name: stg
+    schema: stg
+    tables:
+      - name: stg_cartes_pokemon

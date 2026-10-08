@@ -1,0 +1,12 @@
+my_dbt_project:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: "{{ env_var('HOST_PC_IP') }}"
+      user: "{{ env_var('DB_DEMO_USER') }}"
+      password: "{{ env_var('DB_DEMO_PASSWORD') }}"
+      port: 5434
+      dbname: db_demo
+      schema: stg
+      threads: 4

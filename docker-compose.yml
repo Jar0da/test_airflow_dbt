@@ -1,0 +1,79 @@
+x-airflow-common: &airflow-common
+  build: .
+  environment:
+    - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+    # Utilisation de AIRFLOW__DATABASE__SQL_ALCHEMY_CONN (supprime les warnings)
+    - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres-airflow:5432/airflow
+    - AIRFLOW__CORE__FERNET_KEY=46G9d3A1n3m84d-T_K8zN1P18p95Y513zX_p0_71x48=
+    - AIRFLOW__CORE__LOAD_EXAMPLES=False
+    - AIRFLOW_CONN_POSTGRES_DWH=postgres://${DB_DEMO_USER}:${DB_DEMO_PASSWORD}@${HOST_PC_IP}:5434/db_demo
+    - AIRFLOW__WEBSERVER__WORKERS=1                   # 1 seul worker au lieu de 4 (gain de RAM & CPU)
+    - AIRFLOW__WEBSERVER__WEB_SERVER_WORKER_TIMEOUT=120 # Évite le crash si la VM met du temps à démarrer
+  volumes:
+    - ./dags:/opt/airflow/dags
+    - ./dbt_project:/opt/airflow/dbt_project
+    - ./logs:/opt/airflow/logs
+    - ./plugins:/opt/airflow/plugins
+  depends_on:
+    postgres-airflow:
+      condition: service_healthy
+
+services:
+  postgres-airflow:
+    image: postgres:13
+    environment:
+      - POSTGRES_USER=airflow
+      - POSTGRES_PASSWORD=airflow
+      - POSTGRES_DB=airflow
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U airflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  airflow-init:
+    <<: *airflow-common
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        airflow db init
+        airflow users create --username admin --password admin --firstname Admin --lastname User --role Admin --email admin@example.com
+
+  webserver:
+    <<: *airflow-common
+    command: webserver
+    env_file:
+      - .env
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./dbt_project:/opt/airflow/dbt_project
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      postgres-airflow:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s  # <--- Augmenter ici (ex: 2 minutes de répit au boot)
+
+  scheduler:
+    <<: *airflow-common
+    command: scheduler
+    env_file:
+      - .env
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./dbt_project:/opt/airflow/dbt_project
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      postgres-airflow:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully

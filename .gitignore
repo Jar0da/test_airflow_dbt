@@ -1,0 +1,6 @@
+.env
+dags/__pycache__
+dags/*.json
+dbt_project/logs
+logs/
+plugins/
