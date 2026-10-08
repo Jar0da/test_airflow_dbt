@@ -18,6 +18,7 @@ with DAG(
     default_args=default_args,
     start_date=datetime(2026, 1, 1),
     catchup=False,
+    schedule=None,
     tags=['dbt', 'docker'],
 ) as dag:
 
@@ -26,13 +27,13 @@ with DAG(
         image='ghcr.io/dbt-labs/dbt-postgres:1.7.0',
         command='run --select ods --profiles-dir .',
         api_version='auto',
-        auto_remove=False,       # Desactiver temporairement pour conserver le conteneur en cas de crash
+        auto_remove=True,       # Desactiver temporairement pour conserver le conteneur en cas de crash
         tty=True,               # Active l'emulation TTY pour diffuser le stdout
         docker_url='unix://var/run/docker.sock',
         network_mode='test_airflow_dbt_default',
         environment={
             'PYTHONUNBUFFERED': '1', # Empêche le buffering des sorties de dbt
-            'HOST_PC_IP': os.getenv('HOST_PC_IP', '10.0.2.2'),
+            'HOST_PC_IP': os.getenv('HOST_PC_IP'),
             'DB_DEMO_USER': os.getenv('DB_DEMO_USER'),
             'DB_DEMO_PASSWORD': os.getenv('DB_DEMO_PASSWORD'),
         },
